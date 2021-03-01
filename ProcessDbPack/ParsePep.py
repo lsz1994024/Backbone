@@ -12,7 +12,7 @@ from Parameters import MAX_LENGTH_OF_PEP, MIN_LENGTH_OF_PEP, NUM_CLUSTERS_1ST_LA
 from collections import Counter
 import random
 import numpy as np
-from Utils.Consts import AA_RES_MASS, ATOM_MASS
+from Utils.Consts import AA_RES_MASS, ATOM_MASS, H2O, NH3
 from Utils.Funcs import divideInputList
 
 def getAllProts(fastaDir):
@@ -61,34 +61,7 @@ def digest(prot):
     pepsWithMass = np.array([], dtype)
     
     peps = list(parser.cleave(prot, parser.expasy_rules["trypsin"], missed_cleavages = MISSED_CLEAVAGES, min_length = MIN_LENGTH_OF_PEP))
-    # if 'MESYHKPDQQK' in peps:
-    #     print(peps)
-    # if len(peps) != 0:
-    #     firstPep = peps[0]
-    #     if firstPep ==  'MESYHKPDQQK':
-    #         print(firstPep)
-    #     nTermPep = firstPep[0].lower() + firstPep[1:]
-    #     peps.append(nTermPep)
         
-    nTermPeps = []
-    oxMPeps = []
-    for pep in peps:
-        # print(pep)
-        # a = prot.index(pep)
-        # if pep not in prot:
-        #     print(pep)
-        if prot.index(pep) == 0:
-            nTermPep = pep[0].lower() + pep[1:]
-            nTermPeps.append(nTermPep)
-        elif 'M' in pep:
-            indexs = [M.start() for M in re.finditer('M', pep)]
-            
-            for i in indexs:
-                oxMPep = pep[0:i]+'m'+pep[i+1:]
-                oxMPeps.append(oxMPep)
-                
-    peps.extend(nTermPeps)
-    peps.extend(oxMPeps)
     peps = [pep for pep in peps if (len(pep) <= MAX_LENGTH_OF_PEP 
                                     and 'B' not in pep
                                     and 'J' not in pep 
@@ -101,27 +74,66 @@ def digest(prot):
     return pepsWithMass
   
     
+def getTheoPeaks(pep):
+    dtype = [('mass', float),('peak',  np.unicode_, 10)]
+    theoPeaks = np.array([(calcuSeqMass(pep), 'pc')], dtype)
+    bPeaks = [0] # nterm peak
+    yPeaks = [H2O]  # cterm peak
+    
+    bH2OPeaks = [0]
+    yH2OPeaks = [H2O]
+    
+    bNH3Peaks = [0]
+    yNH3Peaks = [H2O]
+    
+    for i in range(1,len(pep)):
+        left = pep[0:i]
+        right = pep[i:]
+        
+        # print('b%d' % i, left)
+        # print('y%d' % (len(pep)-i), right)
+        #b
+        b = calcuSeqMass(left) - H2O
+        theoPeaks = np.concatenate((theoPeaks, np.array([(b, 'b%d' % i)], dtype)), axis = 0)
+        bPeaks.append(b)
+        
+        #y
+        y = calcuSeqMass(right)
+        theoPeaks = np.concatenate((theoPeaks, np.array([(y, 'y%d' % (len(pep)-i))], dtype)), axis = 0)
+        yPeaks.append(y)
+        
+        #b-H2O  b-NH3
+        theoPeaks = np.concatenate((theoPeaks, np.array([(b - H2O, 'b%d-H2O' % i)], dtype)), axis = 0)
+        theoPeaks = np.concatenate((theoPeaks, np.array([(b - NH3, 'b%d-NH3' % i)], dtype)), axis = 0)
+        bH2OPeaks.append(b - H2O)
+        bNH3Peaks.append(b - NH3)
+        
+        #y-H2O  y-NH3
+        theoPeaks = np.concatenate((theoPeaks, np.array([(y - H2O, 'y%d-H2O' % (len(pep)-i))], dtype)), axis = 0)
+        theoPeaks = np.concatenate((theoPeaks, np.array([(y - NH3, 'y%d-NH3' % (len(pep)-i))], dtype)), axis = 0)
+        yH2OPeaks.append(y - H2O)
+        yNH3Peaks.append(y - NH3)
+        
+        #pc
+        pepMass = calcuSeqMass(pep)
+        bPeaks.append(pepMass)
+        yPeaks.append(pepMass)
+        bH2OPeaks.append(pepMass - H2O)
+        yH2OPeaks.append(pepMass - H2O)
+        bNH3Peaks.append(pepMass - NH3)
+        yNH3Peaks.append(pepMass - NH3)
+    return sorted(bPeaks), sorted(yPeaks), sorted(bH2OPeaks), sorted(yH2OPeaks), sorted(bNH3Peaks), sorted(yNH3Peaks), np.sort(theoPeaks, order = ['mass'])
+
+
 def calcuSeqMass(seq):
     sumMass = 0
     
     for aa in seq:
-        if aa.islower():
-            if aa == seq[0]:
-                sumMass += 42.011 #nterm acetly
-            elif aa == 'm':
-                sumMass += 15.99491463  #variable M oxi
-            sumMass += AA_RES_MASS[aa.upper()]
-        else:
-            sumMass += AA_RES_MASS[aa]
+        sumMass += AA_RES_MASS[aa]
     sumMass += ATOM_MASS['H']*2 + ATOM_MASS['O']
     
     return sumMass
 
-def testGetPepsFromProt(prot):
-    
-    prot = prot.replace("L", "I")
-    peps = digest(prot)
-    return np.unique(peps)
     
 def getAllPeps(protList):
     dtype = [('seq', np.unicode_, MAX_LENGTH_OF_PEP), ('pcMass', float)]
@@ -211,29 +223,6 @@ def getTagsInCommon(tags1,tags2):
     num = len([tag for tag in tags1 if tag in tags2])
     return num
 
-def plotCommonPepsFor(index):
-    maxScore = 0
-    maxIndex = -1
-    scoreList = []
-    for i in range(0, len(allPeps)):
-        if i == index:
-            continue
-        score = getTagsInCommon(tagsDict[allPeps[index]], tagsDict[allPeps[i]])
-        
-        if score > 2:
-            scoreList.append(score)
-            
-        if score > maxScore:
-            maxScore = score
-            maxIndex = i
-    # return Counter(scoreList)
-    print(Counter(scoreList))
-    print(allPeps[index])
-    print(allPeps[maxIndex])
-    print(maxScore)
-    # plt.hist(scoreList, edgecolor = 'k', alpha = 0.35, align ='left', log = True) # 设置直方边线颜色为黑色，不透明度为 0.35
-    # plt.show()
-    
 def getSimilar(tagsWithCount1, tagsWithCount2):
     similarity = 0
     for tag in tagsWithCount1:
@@ -278,30 +267,10 @@ def updateCluster(clusterOfTags, clusterOfPeps, tagsDictWithCount):
      
 if __name__ == '__main__':
 #    protList = getProtsList("test.fasta")
-    protList = getAllProts('G:/Database/fasta/uniprot_homo_sapiens.fasta')
+    peaks = getTheoPeaks('YHTVKGHNCEVRK')
+    #'VAVAHAGHR', 'TATAVAHCK', 'IKRAVAHK', 'AEDGHAVAK', 'QIAVAHEK']
     
-    print("length of Prots = ", len(protList))
-    
-    allPeps = getAllPeps(protList)
-    print("Number of all peps = ", len(allPeps))
-    
-    aas = list('ACDEFGHIKMNPQRSTVWY')
-    pepWithoutAA = {}
-    
-    for aa in aas:
-        pepWithoutAA[aa] = []
-    for pep in allPeps:
-        for aa in aas:
-            if aa in pep:
-                pepWithoutAA[aa].append(pep)
-    
-    tagsDict = getTagsDict(allPeps)
-    
-    tagsDictWithCount = getTagsWithCountDict(allPeps)
-   
-    allTags = getAllTags(tagsDict)
-    print("Total tags number ", len(allTags))
-
+    print(peaks[-1])
 
         
 

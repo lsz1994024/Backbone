@@ -74,13 +74,6 @@ def extractTagByCheckAA(mzs, startId, startMz, currentTag, currentScore, aaCanBe
             involvedIds += (' ' + str(candId))
             involvedScores += (' ' + str(score))
             
-            # if (score - 0.9311951) < 1e-6 :
-                # print(realAA)
-                # print(currentTag)
-                # print(candId, mzs[candId], startId, mzs[startId])
-                # print(candId,candidatesId[-1])
-            # if currentTag == 'DYY':
-            #     print(currentScore)
             candMz = mzs[candId]
             if needRevise:
                 # mzs[candId] = startMz + AA_RES_MASS[realAA]

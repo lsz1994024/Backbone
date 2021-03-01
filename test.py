@@ -9,22 +9,29 @@ import pandas as pd
 import re
 
 import numpy as np
-
+from time import time
 def foo(seq):
     for aa in seq:
         print(aa)
     return 1
 
-if __name__ == '__main__':
+if __name__ == '__main__':  
     
-    dtype = [('seq', np.unicode_, 6), ('pcMass', float)]
-    pepsWithMass = np.array([], dtype)
     
-    peps = ['DSA','DSA','DWQ']
-    a = [tuple([pep, 2]) for pep in range(5)]
-    # a = [[i, i+3.2] for i in range(5)]
-    b = np.array([[i, i+3.2] for i in range(5)], dtype)
-    pepsWithMass = np.array(a, dtype)
+    tag = 'SAW'
+    
+    seq = 'DWSADFSAJPOWQDJPINFADSKMSAWFDPOKFDAOIJOPSDJDSA'
+    
+    t1 = time()
+    a = tag in seq
+    
+    t2 = time()
+    
+    b = re.match(tag, seq)
+    t3 = time()
+    
+    print(t2-t1)
+    print(t3-t2)
     
     
   

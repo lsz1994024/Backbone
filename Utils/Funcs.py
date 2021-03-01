@@ -35,6 +35,12 @@ def sendEmail():
     yag = yagmail.SMTP(user = '2578027596@qq.com', password = 'alexlptryglrdhii', host = 'smtp.qq.com')
     yag.send(to = ['laishengzhi1994@163.com'], subject = 'Finished code', contents = ['Finished code'])
 
+MU = 0
+def gaussian(x, SIGMA2):
+    
+    f = 1/sqrt(2*pi*SIGMA2)*exp(-(x-MU)**2/2/SIGMA2)
+    return f
+
 if __name__ == '__main__':
     
     arr = [1,2,3,4,5,6,7,8,9,10,11,12] 

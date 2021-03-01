@@ -14,30 +14,25 @@ from itertools import repeat
 import pandas as pd
 import numpy as np
 from Utils.Funcs import binarySearch
-from ScorePack.Match import getPepCand, cleanUpTags
+from ScorePack.Match import getPepCand, cleanUpTags, findPtm
 from Utils.Funcs import divideInputList
-
-#%% Set Parameters
+from time import time
 from Parameters import *
-#%% functions
 
-def getFeasiblePep(pcMass, allPeps, massTol):
-    lb = binarySearch(allPeps['pcMass'], 0, len(allPeps)-1, pcMass*(1 - massTol))
-    ub = binarySearch(allPeps['pcMass'], 0, len(allPeps)-1, pcMass*(1 + massTol))
-    # print(lb, ub)
+#test
+from ProcessDbPack.ParsePep import calcuSeqMass
+#% functions
+
+def getFeasiblePep(pcMass, allPeps, massShift):
+    lb = binarySearch(allPeps['pcMass'], 0, len(allPeps)-1, pcMass - massShift)
+    ub = binarySearch(allPeps['pcMass'], 0, len(allPeps)-1, pcMass + 1)
     return list(allPeps['seq'][lb : ub])
     
-# def searchOne(scanNo):
 def searchSome(scanNoList):
     global specDict, allPeps
     psms = []
     # i = 0
     for scanNo in scanNoList:
-        # i+=1
-        # # noneRes = tuple((scanNo, [], []))
-        # # global specDict, allPeps
-        # if i % 200 == 0:
-        #     print('processing i files ', i, scanNo)
             
         pcMass = specDict[scanNo][0]
         rawSpec = specDict[scanNo][1]
@@ -46,11 +41,10 @@ def searchSome(scanNoList):
         if len(mzs) == 0:
             continue
         
-        # print(mzs)
         
         tags = readTagsFromMS2(mzs)
-        
-        # print('finish tag', scanNo)
+        print(mzs)
+        # print('finish tag', tags)
             
         reliableTags = []
         for tag in tags:
@@ -58,7 +52,7 @@ def searchSome(scanNoList):
             if tag[1] < TAG_SCORE_THRES:
                 break
             
-            reliableTags.append(tuple(tag[0:2]))
+            reliableTags.append(tuple(tag[0:3]))
                 
             if len(reliableTags) == MAX_TAGS_NUM:
                 break
@@ -66,39 +60,15 @@ def searchSome(scanNoList):
         if len(reliableTags) == 0:
             continue
         
-        # print('reTags', reliableTags)
         # print(reliableTags)
-        # print(len(reliableTags), reliableTags[len(reliableTags)])
         cleanUpTags(reliableTags)
+        
+        feasiblePeps = getFeasiblePep(pcMass, allPeps, MASS_SHIFT)
+        
         # print(reliableTags)
-        # tagDict = {}
-        # tagKeys = list(set([tag[0] for tag in reliableTags]))
-        # for tag in tagKeys:
-        #     tagDict[tag] = [0, 0]
-        
-        # for tag in reliableTags:
-        #     tagDict[tag[0]][0] += tag[1]
-        #     tagDict[tag[0]][1] += 1
-        
-        # reliableTagsList = []
-        # for tag in tagDict:
-        #     reliableTagsList.append([tag, tagDict[tag][0]/tagDict[tag][1]])
-            
-        # print(reliableTagsList)
-        # reliableTags = list(set(reliableTags)) #todo   dont set it 
-        
-        feasiblePeps = getFeasiblePep(pcMass, allPeps, MASS_TOL)
-        # print('TALLDAAGVASLLTTAEVVVTEIPKEEKDPGMGAMGGMGGGMGGGMF' in feasiblePeps)
-        # print(scanNo, pcMass)
-        # print('reliable tags')
-        # print(reliableTags)
-        # print('length', len(reliableTags), len(set(reliableTags)))
-        # print('IAHYNKR in feasible', 'IAHYNKR' in feasiblePeps)
-        pepCand = getPepCand(reliableTags, feasiblePeps)
-        # print('pepCand', pepCand)
-        # print('IAHYNKR in pepCand', 'IAHYNKR' in pepCand)
-        psms.append(tuple((scanNo, reliableTags, pepCand, len(feasiblePeps))))  
-        # print('MYSYPARVPPPPPIAR' in pepCand)
+        ptm = findPtm(mzs, reliableTags, feasiblePeps, pcMass, MS1_TOL)
+        psms.extend(ptm)  
+        print('scan %d ' % scanNo, psms)
     return psms
     
     
@@ -110,14 +80,14 @@ def doSearch(specDict, allPeps):
     
     scanNoList = [key for key in specDict]
     
-    # scanNoList = [3116] #test
-    
-    dividedScanList = divideInputList(scanNoList, 2000)
+    scanNoList = [2608]#1844,2462,2608,13540,18113,37531,40813,40972,44676,46721,47401,47547,47607] #test
+    #1844,2462,2608, C   47401 no   other M
+    dividedScanList = divideInputList(scanNoList, 14)
     
     print('len of scanNo list ', len(scanNoList))
     allPsms = []
     print("lsz start computation")
-    with cf.ProcessPoolExecutor(max_workers = 88) as executor:
+    with cf.ProcessPoolExecutor(max_workers = 14) as executor:
         # results = executor.map(searchOne, scanNoList)
         for result in executor.map(searchSome, dividedScanList):
         # for result in results:
@@ -147,7 +117,7 @@ def parseDB(protList):
 
 #%% Read DB and Spectra
 if __name__ == '__main__':
-    from time import time
+
     
     protList = getAllProts(DB_PATH)
     # allPeps = getAllPeps(protList)
@@ -175,13 +145,13 @@ if __name__ == '__main__':
     from Utils.Funcs import sendEmail
     # sendEmail()
     #% write
-    dataPsms = pd.DataFrame({'scanNo' : [psm[0] for psm in allPsms],
-                                    'tags'   : [psm[1] for psm in allPsms],
-                                    'seqs'   : [psm[2] for psm in allPsms]})#, orient='scanNo',columns=['Tags', 'Candidates'])
-    filePath = pd.ExcelWriter(r'TempData/dataPsms.xlsx')
-    dataPsms.to_excel(r'TempData/dataPsms.xlsx')
+    # dataPsms = pd.DataFrame({'scanNo' : [psm[0] for psm in allPsms],
+    #                                 'tags'   : [psm[1] for psm in allPsms],
+    #                                 'seqs'   : [psm[2] for psm in allPsms]})#, orient='scanNo',columns=['Tags', 'Candidates'])
+    # filePath = pd.ExcelWriter(r'TempData/dataPsms.xlsx')
+    # dataPsms.to_excel(r'TempData/dataPsms.xlsx')
     
-    #% verification
+    #%% verification
     dataMascot = pd.read_excel('/home/slaiad/Code/TagTree/testData/MK_SIO13_P2_GM1.xlsx')
     
     masDict = {}
