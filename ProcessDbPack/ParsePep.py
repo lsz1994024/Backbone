@@ -267,7 +267,7 @@ def updateCluster(clusterOfTags, clusterOfPeps, tagsDictWithCount):
      
 if __name__ == '__main__':
 #    protList = getProtsList("test.fasta")
-    peaks = getTheoPeaks('YHTVKGHNCEVRK')
+    peaks = getTheoPeaks('IIEDGEDFNIGDAIDSSNSMQTIQK')
     #'VAVAHAGHR', 'TATAVAHCK', 'IKRAVAHK', 'AEDGHAVAK', 'QIAVAHEK']
     
     print(peaks[-1])

@@ -8,6 +8,9 @@ Created on Mon Feb 22 09:53:32 2021
 
 from fuzzywuzzy import fuzz
 from ProcessDbPack.ParsePep import getTheoPeaks, calcuSeqMass
+import numpy as np
+from Parameters import NUM_EXTRA_MOD_PEAKS
+from Utils.Consts import ATOM_MASS
 
 def getIonCoverage(ions, mzs, massTol, lenTag):
     numMatch = 0
@@ -19,32 +22,91 @@ def getIonCoverage(ions, mzs, massTol, lenTag):
         
         if minDiff <= massTol:
             numMatch += 1
-            print(mz)
-    print(numMatch - 2, len(mzs) - lenTag - 2)
+            # print(mz)
+    # print(numMatch - 2, len(mzs) - lenTag - 2)
     # return float(numMatch - 2)/(len(mzs) - lenTag - 2)
     return (numMatch - 2)
     
+def getModIons(oriLIons, oriRIons, mzs, massTol, pcMassDiff, modPosL, modPosR):
     
-    
-    
-    
+    # print(massTol)
+    # print(mzs)
+    numModL = 0
+    numModR = 0
+    lenMod = modPosR - modPosL
+    maxL = lenMod
+    minR = lenMod
+    print('minR, maxL',minR, maxL)
+    # print(pcMassDiff)
+    for mz in mzs:
+        for l in range(len(oriLIons)):
+            # print(abs(eIon - oriLIons[l] - pcMassDiff) , massTol)
+            if abs(mz - oriLIons[l][0] - pcMassDiff) < massTol or abs(mz - oriLIons[l][1] - pcMassDiff) < massTol or abs(mz - oriLIons[l][2] - pcMassDiff) < massTol:
+                # print('mz', mz, oriLIons[l][0])
+                if numModL == 0:
+                    minR = l  #the first lIon corrects the max right mod pos
+                    print('l',l)
+                numModL += 1
+                
+        for r in range(len(oriRIons)):
+            if abs(mz - oriRIons[r][0] - pcMassDiff) < massTol or abs(mz - oriRIons[r][1] - pcMassDiff) < massTol or abs(mz - oriRIons[r][2] - pcMassDiff) < massTol:
+                # print('mz', mz, oriRIons[r][0])
+                if numModR == 0:
+                    maxL = r  #the first lIon corrects the max right mod pos
+                    print('r',r)
+                numModR += 1
+    print('minR, maxL',minR, maxL)
+    print(modPosL, modPosR)
+    print((modPosL + (lenMod - min(maxL, lenMod))), (modPosR - (lenMod - minR)))
+    return numModL + numModR, (modPosL + (lenMod - min(maxL, lenMod))), (modPosR - (lenMod - minR))
+
+def getModIonsV2(oriLIons, oriRIons, mzs, massTol, pcMassDiff, modPosL, modPosR):
+    numModL = 0
+    numModR = 0
+    lenMod = modPosR - modPosL
+    maxL = lenMod
+    minR = lenMod
+    print('minR, maxL',minR, maxL)
+    # print(pcMassDiff)
+    for mz in mzs:
+        for l in range(len(oriLIons)):
+            # print(abs(eIon - oriLIons[l] - pcMassDiff) , massTol)
+            if abs(mz - oriLIons[l][0] - pcMassDiff) < massTol or abs(mz - oriLIons[l][1] - pcMassDiff) < massTol or abs(mz - oriLIons[l][2] - pcMassDiff) < massTol:
+                # print('mz', mz, oriLIons[l][0])
+                if numModL == 0:
+                    minR = l  #the first lIon corrects the max right mod pos
+                    print('l',l)
+                numModL += 1
+                
+        for r in range(len(oriRIons)):
+            if abs(mz - oriRIons[r][0] - pcMassDiff) < massTol or abs(mz - oriRIons[r][1] - pcMassDiff) < massTol or abs(mz - oriRIons[r][2] - pcMassDiff) < massTol:
+                # print('mz', mz, oriRIons[r][0])
+                if numModR == 0:
+                    maxL = r  #the first lIon corrects the max right mod pos
+                    print('r',r)
+                numModR += 1
+    print('minR, maxL',minR, maxL)
+    print(modPosL, modPosR)
+    print((modPosL + (lenMod - min(maxL, lenMod))), (modPosR - (lenMod - minR)))
+    return numModL + numModR, (modPosL + (lenMod - min(maxL, lenMod))), (modPosR - (lenMod - minR))
+          
 def findPtm(mzs, reliableTags, feasiblePeps, pcMass, tol):
-    
-    additionalTags = []
-    for reliableTag in reliableTags:
-        if reliableTag[0].count('Q') == 1:
-            additionalTags.append(tuple((reliableTag[0].replace('Q', 'GA'), reliableTag[1], reliableTag[2])))
-            additionalTags.append(tuple((reliableTag[0].replace('Q', 'AG'), reliableTag[1], reliableTag[2])))
-    reliableTags.extend(additionalTags)
+    massTol = pcMass*tol
+    # additionalTags = []
+    # for reliableTag in reliableTags:
+    #     if reliableTag[0].count('Q') == 1:
+    #         additionalTags.append(tuple((reliableTag[0].replace('Q', 'GA'), reliableTag[1], reliableTag[2])))
+    #         additionalTags.append(tuple((reliableTag[0].replace('Q', 'AG'), reliableTag[1], reliableTag[2])))
+    # reliableTags.extend(additionalTags)
     
     psms = []
-    print(reliableTags)
+    # print(reliableTags)
     for reliableTag in reliableTags:
         tag = reliableTag[0]
-        print(tag)
         
-        # if tag != 'KRVE':
-        #     continue
+        if tag != 'GVA':
+            continue
+        # print(tag)
         # print('it RHF now')
         index = [int(i) for i in reliableTag[2].split()]
         
@@ -55,180 +117,84 @@ def findPtm(mzs, reliableTags, feasiblePeps, pcMass, tol):
         
         # print(pepCand)
         for pep in pepCand:
+            if pep!= 'SKSYYICTSISTPAIGAGGSGSTGGAVGGK':
+                continue
             # print(pep)
-            # if pep!= 'GSCFHR':
-            #     continue
             # print('GSCFHR')
-            pcMassDiff = pcMass - calcuSeqMass(pep)  
+            # pcMass = 2755.258270771486
+            pcMassDiff = pcMass - calcuSeqMass(pep) 
             
             bPeaks, yPeaks, bH2OPeaks, yH2OPeaks, bNH3Peaks, yNH3Peaks, theoPeaks = getTheoPeaks(pep)
-            # alignPos
-            if pep.find(tag) != -1: # left to right, use b ions
-                alignPos = pep.find(tag)
-                print(tag, pep)
-                modPos = alignPos # index starts from 1, for those life science people
-                print(alignPos, 'N')
-                bIonMassTheo = [bPeaks[i] for i in range(alignPos, alignPos + len(tag) + 1)] #range(i, j) has i, does not have j
-                bIonMassExpe = [mzs[i] for i in index]
-                
-                # print([yIonMassExpe[i] - yIonMassTheo[i] for i in range(len(yIonMassTheo))])
-                aveMassDiff = sum([bIonMassExpe[i] - bIonMassTheo[i] for i in range(len(bIonMassTheo))])/len(bIonMassTheo)
-                # print(yIonMassTheo)
-                # print(yIonMassExpe)
-                # print(aveMassDiff)
-                # print(abs(pcMassDiff - aveMassDiff) < pcMass*tol)
-                ions = []
-                
-                if abs(aveMassDiff) < pcMass*tol:
-                    modPos = -1
-                    y1 = []
-                    y2 = []
-                    y3 = []
-                    for i in range(len(pep) - alignPos + 1, len(pep) + 1):
-                        y1 = yPeaks
-                        y2 = yH2OPeaks
-                        y3 = yNH3Peaks  #this is not yi ion, just copys of these 3 ionmass list
-                        
-                        y1[i] += aveMassDiff
-                        y2[i] += aveMassDiff
-                        y3[i] += aveMassDiff
-                    ions.extend(y1)
-                    ions.extend(y2)
-                    ions.extend(y3)
-                    ions.extend(bPeaks)
-                    ions.extend(bH2OPeaks)
-                    ions.extend(bNH3Peaks)
-                    
-                elif abs(pcMassDiff - aveMassDiff) < pcMass*tol:
-                    b1 = []
-                    b2 = []
-                    b3 = []
-                    for i in range(alignPos + len(tag) + 1, len(pep) + 1):
-                        b1 = bPeaks
-                        b2 = bH2OPeaks
-                        b3 = bNH3Peaks  #this is not bi ion, just copys of these 3 ionmass list
-                        
-                        b1[i] += aveMassDiff
-                        b2[i] += aveMassDiff
-                        b3[i] += aveMassDiff
-                    ions.extend(b1)
-                    ions.extend(b2)
-                    ions.extend(b3)
-                    ions.extend(yPeaks)
-                    ions.extend(yH2OPeaks)
-                    ions.extend(yNH3Peaks)
-                        
-                else:
-                    #check peak coverage
-                    continue  
-
-                cov = getIonCoverage(ions, mzs, pcMass*tol, len(tag))
-                print('cov', cov)
-                if cov > 0.1:
-                    psms.append( tuple((tag, pep, pcMassDiff, modPos)) )
-                
-                
-                
-            else:                   # right to left, use y ions
-                print(tag, pep)
-                alignPos = pep[::-1].find(tag)
-                print(alignPos, 'C')
-                modPos = len(pep) - alignPos + 1 # index starts from 1, for those life science people
-                yIonMassTheo = [yPeaks[i] for i in range(alignPos, alignPos + len(tag) + 1)] #range(i, j) has i, does not have j
-                yIonMassExpe = [mzs[i] for i in index]
-                
-                # print([yIonMassExpe[i] - yIonMassTheo[i] for i in range(len(yIonMassTheo))])
-                aveMassDiff = sum([yIonMassExpe[i] - yIonMassTheo[i] for i in range(len(yIonMassTheo))])/len(yIonMassTheo)
-                # print(yIonMassTheo)
-                # print(yIonMassExpe)
-                # print(aveMassDiff)
-                # print(abs(pcMassDiff - aveMassDiff) < pcMass*tol)
-                ions = []
-                b1 = list(bPeaks)
-                b2 = list(bH2OPeaks)
-                b3 = list(bNH3Peaks)
-                y1 = list(yPeaks)
-                y2 = list(yH2OPeaks)
-                y3 = list(yNH3Peaks)
-                for i in range(len(pep)):
-                    b1[i] += pcMassDiff
-                    b2[i] += pcMassDiff
-                    b3[i] += pcMassDiff
-                    y1[i] += pcMassDiff
-                    y2[i] += pcMassDiff
-                    y3[i] += pcMassDiff
-                ions.extend(b1)
-                ions.extend(b2)
-                ions.extend(b3)
-                ions.extend(yPeaks)
-                ions.extend(yH2OPeaks)
-                ions.extend(yNH3Peaks)
-                
-                ions.extend(y1)
-                ions.extend(y2)
-                ions.extend(y3)
-                ions.extend(bPeaks)
-                ions.extend(bH2OPeaks)
-                ions.extend(bNH3Peaks)
-                
-                #start
-                # if abs(aveMassDiff) < pcMass*tol:
-                #     # print('here')
-                #     modPos = -1
-                #     b1 = []
-                #     b2 = []
-                #     b3 = []
-                #     for i in range(len(pep) - alignPos + 1, len(pep) + 1):
-                #         # print('here111')
-                #         b1 = bPeaks
-                #         b2 = bH2OPeaks
-                #         b3 = bNH3Peaks  #this is not bi ion, just copys of these 3 ionmass list
-                        
-                #         b1[i] += aveMassDiff
-                #         b2[i] += aveMassDiff
-                #         b3[i] += aveMassDiff
-                #     ions.extend(b1)
-                #     ions.extend(b2)
-                #     ions.extend(b3)
-                #     ions.extend(yPeaks)
-                #     ions.extend(yH2OPeaks)
-                #     ions.extend(yNH3Peaks)
-                #     # print(ions)
-                    
-                # elif abs(pcMassDiff - aveMassDiff) < pcMass*tol:
-                #     y1 = []
-                #     y2 = []
-                #     y3 = []
-                #     for i in range(alignPos + len(tag) + 1, len(pep) + 1):
-                #         y1 = yPeaks
-                #         y2 = yH2OPeaks
-                #         y3 = yNH3Peaks
-                        
-                #         y1[i] += pcMassDiff
-                #         y2[i] += pcMassDiff
-                #         y3[i] += pcMassDiff
-                #     ions.extend(y1)
-                #     ions.extend(y2)
-                #     ions.extend(y3)
-                #     ions.extend(bPeaks)
-                #     ions.extend(bH2OPeaks)
-                #     ions.extend(bNH3Peaks)
-                        
-                # else:
-                #     #check peak coverage
-                #     continue  
-                #end
-                
-                # print(ions)
-                cov = getIonCoverage(list(set(ions)), mzs, pcMass*tol, len(tag))
-                print('cov', cov)
-                print('pcMassDiff',pcMassDiff)
-                print('aveMassDiff',aveMassDiff)
-                if cov > 10:
-                    psms.append( tuple((tag, pep, pcMassDiff, modPos)) )
-                
+            isPepReversed = False
             
-    # print(psms)
+            if pep.find(tag) != -1:
+                alignPos = pep.find(tag)
+                lPeaks = bPeaks.copy()
+                rPeaks = yPeaks.copy()
+                lH2OPeaks = bH2OPeaks.copy()
+                rH2OPeaks = yH2OPeaks.copy()
+                lNH3Peaks = bNH3Peaks.copy()
+                rNH3Peaks = yNH3Peaks.copy()
+                
+            else:
+                isPepReversed = True
+                pep = pep[::-1]
+                alignPos = pep.find(tag)
+                
+                lPeaks = yPeaks.copy()
+                rPeaks = bPeaks.copy()
+                lH2OPeaks = yH2OPeaks.copy()
+                rH2OPeaks = bH2OPeaks.copy()
+                lNH3Peaks = yNH3Peaks.copy()
+                rNH3Peaks = bNH3Peaks.copy()
+                
+            lIonMassTheo = np.array([lPeaks[i] for i in range(alignPos, alignPos + len(tag) + 1)]) #range(i, j) has i, does not have j
+            lIonMassExpe = np.array([mzs[i] for i in index])
+            # print(lIonMassTheo)
+            # print(lIonMassExpe)
+            alignMassDiff = np.average(lIonMassExpe - lIonMassTheo)
+            print(pcMassDiff)
+            print(abs(pcMassDiff - alignMassDiff) < massTol)
+            modPosL = 1 #initial pos start from 1
+            modPosR = len(pep) #initial pos
+            if abs(pcMassDiff - alignMassDiff) < massTol: #very confident, almost do not need further validation
+                #mod pos is in left
+                
+                modPosL = 1
+                modPosR = alignPos
+                print(modPosL, modPosR)
+                #try to narrow down the mod pos range
+                oriLIons = [i for i in zip(lPeaks[modPosL + len(tag) + 1 : ], lH2OPeaks[modPosL + len(tag) + 1 : ], lNH3Peaks[modPosL + len(tag) + 1 : ] )]
+                oriRIons = [i for i in zip(rPeaks[1 : len(pep) - modPosR], rH2OPeaks[1 : len(pep) - modPosR], rNH3Peaks[1 : len(pep) - modPosR]  )]
+                otherMzs = list(set(mzs) - set(lIonMassExpe))
+                getModIonsV2(oriLIons, oriRIons, otherMzs, 0.02, pcMassDiff, modPosL, modPosR)
+                if isPepReversed:
+                    psms.append( tuple((tag, pep[::-1], pcMassDiff, len(pep) + 1 - modPosR, len(pep) + 1 - modPosL)) )
+                else:
+                    psms.append( tuple((tag, pep, pcMassDiff, modPosL, modPosR)) )
+                    
+            elif abs(alignMassDiff) < massTol:
+                #mod pos is in right
+                # print('here')
+                modPosL = alignPos + len(tag) + 1
+                modPosR = len(pep)
+                print(modPosL, modPosR)
+                oriLIons = [i for i in zip(lPeaks[modPosL : ], lH2OPeaks[modPosL : ], lNH3Peaks[modPosL : ] )]
+                oriRIons = [i for i in zip(rPeaks[1 : ], rH2OPeaks[1 : ], rNH3Peaks[1 : ]  )]
+                otherMzs = list(set(mzs) - set(lIonMassExpe))
+                numMod, modPosL, modPosR = getModIons(oriLIons, oriRIons, otherMzs, 0.02, pcMassDiff, modPosL, modPosR)
+                # print('hasMod', hasMod)
+                print(modPosL, modPosR)
+                if numMod >= NUM_EXTRA_MOD_PEAKS:
+                    if isPepReversed:
+                        psms.append( tuple((tag, pep[::-1], pcMassDiff, len(pep) + 1 - modPosR, len(pep) + 1 - modPosL, numMod)) )
+                    else:
+                        psms.append( tuple((tag, pep, pcMassDiff, modPosL, modPosR, numMod)) )
+                else:
+                    continue
+            # else:
+            #     print('todo more than one modification')
+                
     return psms
 
 def lcs(s1, s2): 
@@ -246,8 +212,13 @@ def lcs(s1, s2):
  
 
 def cleanUpTags(reliableTags):
-    # cleanTags = []
+    cleanedTags = []
+    print('reliableTags', reliableTags)
+    print(len(reliableTags))
     for i in range(len(reliableTags)):
+        print('i', i)
+        a = reliableTags[i]
+        print('after')
         if len(reliableTags[i][0]) <= 6:
             continue
         for j in range(len(reliableTags) - 1, i, -1):

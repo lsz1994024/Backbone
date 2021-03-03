@@ -39,11 +39,16 @@ if __name__ == '__main__':
     #%%read
     # peptide_averagine = ms_deisotope.Averagine({"C": 4.9384, "H": 7.7583, "N": 1.3577, "O": 1.4773, "S": 0.0417})
 
-    
+    from ms_deisotope import Averagine
+    from ms_deisotope import plot
+
+    peptide_averagine = Averagine({"C": 4.9384, "H": 7.7583, "N": 1.3577, "O": 1.4773, "S": 0.0417})
+
+    plot.draw_peaklist(peptide_averagine.isotopic_cluster(919.76683, charge=3))
 
     
     # humanmlPath = 'G:/Dataset/PXD022999/191122_MK_SIO13_P2-GM1.mzML'
-    humanXmlPath = 'G:/Dataset/PXD022999/191122_MK_SIO13_P2-GM1.mzXML'
+    # humanXmlPath = 'G:/Dataset/PXD022999/191122_MK_SIO13_P2-GM1.mzXML'
     # path = 'G:/Dataset/PXD022999/test/three_test_scans.mzML'
     # # reader = ms_deisotope.MSFileLoader(path)
     # specDict = readPeaksFromXML(humanXmlPath)

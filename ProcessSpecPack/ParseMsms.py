@@ -39,8 +39,8 @@ def findAA(deltaMz, lenCurTags):
                 score = scoreTag(abs(deltaMz - AA_INFO['resMass'][i - 1]))
             break
     
-    if score < 0.7 and lenCurTags == 0:# if it is the start aa, it has to be precise
-        realAA = ''
+    # if score < 0.7 and lenCurTags == 0:# if it is the start aa, it has to be precise
+    #     realAA = ''
         
     if score < AA_SCORE_THRES :
         realAA = ''

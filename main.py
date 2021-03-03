@@ -43,7 +43,7 @@ def searchSome(scanNoList):
         
         
         tags = readTagsFromMS2(mzs)
-        print(mzs)
+        # print(mzs)
         # print('finish tag', tags)
             
         reliableTags = []
@@ -60,8 +60,8 @@ def searchSome(scanNoList):
         if len(reliableTags) == 0:
             continue
         
-        # print(reliableTags)
-        cleanUpTags(reliableTags)
+        print(reliableTags)
+        # cleanUpTags(reliableTags)
         
         feasiblePeps = getFeasiblePep(pcMass, allPeps, MASS_SHIFT)
         
@@ -80,7 +80,7 @@ def doSearch(specDict, allPeps):
     
     scanNoList = [key for key in specDict]
     
-    scanNoList = [2608]#1844,2462,2608,13540,18113,37531,40813,40972,44676,46721,47401,47547,47607] #test
+    scanNoList = [40972]#1844,2462,2608,13540,18113,37531,40813,40972,44676,46721,47401,47547,47607] #test
     #1844,2462,2608, C   47401 no   other M
     dividedScanList = divideInputList(scanNoList, 14)
     
@@ -138,6 +138,8 @@ if __name__ == '__main__':
     print("start Searching")
     
     t4 = time()
+
+
     allPsms = doSearch(specDict, allPeps)
     t5 = time()
     
