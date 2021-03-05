@@ -56,9 +56,6 @@ def getInnerTags(cifFileDir):
     return coord
     
 def digest(prot):
-    # print(prot)
-    dtype = [('seq', np.unicode_, MAX_LENGTH_OF_PEP), ('pcMass', float)]
-    pepsWithMass = np.array([], dtype)
     
     peps = list(parser.cleave(prot, parser.expasy_rules["trypsin"], missed_cleavages = MISSED_CLEAVAGES, min_length = MIN_LENGTH_OF_PEP))
         
@@ -69,9 +66,14 @@ def digest(prot):
                                     and 'Z' not in pep 
                                     and 'O' not in pep 
                                     and 'U' not in pep)]
+    additionalPeps = []
     
-    pepsWithMass = np.array([tuple([pep, calcuSeqMass(pep)]) for pep in peps], dtype)
-    return pepsWithMass
+    for pep in peps:
+        if pep[0] == 'M' and prot.find(pep) == 0:
+            additionalPeps.append(pep[1:])
+    peps.extend(additionalPeps)
+    
+    return peps
   
     
 def getTheoPeaks(pep):
@@ -85,7 +87,7 @@ def getTheoPeaks(pep):
     
     bNH3Peaks = [0]
     yNH3Peaks = [H2O]
-    
+    # print('len', len(bPeaks))
     for i in range(1,len(pep)):
         left = pep[0:i]
         right = pep[i:]
@@ -115,13 +117,14 @@ def getTheoPeaks(pep):
         yNH3Peaks.append(y - NH3)
         
         #pc
-        pepMass = calcuSeqMass(pep)
-        bPeaks.append(pepMass)
-        yPeaks.append(pepMass)
-        bH2OPeaks.append(pepMass - H2O)
-        yH2OPeaks.append(pepMass - H2O)
-        bNH3Peaks.append(pepMass - NH3)
-        yNH3Peaks.append(pepMass - NH3)
+    pepMass = calcuSeqMass(pep)
+    bPeaks.append(pepMass)
+    yPeaks.append(pepMass)
+    bH2OPeaks.append(pepMass - H2O)
+    yH2OPeaks.append(pepMass - H2O)
+    bNH3Peaks.append(pepMass - NH3)
+    yNH3Peaks.append(pepMass - NH3)
+    # print('lenend', len(bPeaks))
     return sorted(bPeaks), sorted(yPeaks), sorted(bH2OPeaks), sorted(yH2OPeaks), sorted(bNH3Peaks), sorted(yNH3Peaks), np.sort(theoPeaks, order = ['mass'])
 
 
@@ -152,13 +155,11 @@ def getAllPeps(protList):
     return np.unique(allPeps)
 
 def getAllPepsForParallel(protList):
-    dtype = [('seq', np.unicode_, MAX_LENGTH_OF_PEP), ('pcMass', float)]
-    allPeps = np.array([], dtype)
-    
+    allPeps = []
     for prot in protList:
         prot = prot.replace("L", "I")
         peps = digest(prot)
-        allPeps = np.concatenate((allPeps, peps), axis = 0)
+        allPeps.extend(peps)
     return allPeps
 
 def getTags(pep):

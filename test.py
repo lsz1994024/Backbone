@@ -1,37 +1,60 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Jan 19 10:40:07 2021
+class last_occurrence(object):
+    """Last occurrence functor."""
 
-@author: slaiad
-"""
+    def __init__(self, pattern, alphabet):
+        """Generate a dictionary with the last occurrence of each alphabet
+        letter inside the pattern.
+        
+        Note: This function uses str.rfind, which already is a pattern
+        matching algorithm. There are more 'basic' ways to generate this
+        dictionary."""
+        self.occurrences = dict()
+        for letter in alphabet:
+            self.occurrences[letter] = pattern.rfind(letter)
 
-import pandas as pd
-import re
+    def __call__(self, letter):
+        """Return last position of the specified letter inside the pattern.
+        Return -1 if letter not found in pattern."""
+        return self.occurrences[letter]
 
-import numpy as np
-from time import time
-def foo(seq):
-    for aa in seq:
-        print(aa)
-    return 1
 
-if __name__ == '__main__':  
-    
-    
-    tag = 'SAW'
-    
-    seq = 'DWSADFSAJPOWQDJPINFADSKMSAWFDPOKFDAOIJOPSDJDSA'
-    
-    t1 = time()
-    a = tag in seq
-    
-    t2 = time()
-    
-    b = re.match(tag, seq)
-    t3 = time()
-    
-    print(t2-t1)
-    print(t3-t2)
-    
-    
-  
+def boyer_moore_match(text, pattern):
+    """Find occurrence of pattern in text."""
+    alphabet = set(text)
+    last = last_occurrence(pattern, alphabet)
+    m = len(pattern)
+    n = len(text)
+    i = m - 1  # text index
+    j = m - 1  # pattern index
+    while i < n:
+        if text[i] == pattern[j]:
+            if j == 0:
+                return i
+            else:
+                i -= 1
+                j -= 1
+        else:
+            l = last(text[i])
+            i = i + m - min(j, 1+l)
+            j = m - 1 
+    return -1
+
+
+
+### TEST FUNCTION ###
+
+if __name__ == '__main__':
+        
+    def show_match(text, pattern):
+        p = boyer_moore_match(text, pattern)
+        print (p)
+
+    text = 'abacaabadcabacabaabb'
+    pattern = 'abacab'
+    show_match(text, pattern)
+    print
+
+    text = 'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.'
+    pattern = 'm'
+    show_match(text, pattern)
+    show_match(text, pattern + 'e')

@@ -40,7 +40,7 @@ if __name__ == '__main__':
     data1 = ['TAG', 'VGF', 'GTB','EEW']
     # data1 = ['TAG', 'RBT', 'WCDS']
     
-    data2 = 'TAGDSAFDVGFGTEEWEQWWRFRSDAAWCDSNBH'
+    data2 = 'TAGDSAFDVGFGTBEEWEQWWRFRSDAAWCDSNBH'
     data3 = 'TAGSSAFDDBFDTWEEWTDWWRFRSCASWCDSQBH'
     
     data2 = [data2[i:i+3] for i in range(len(data2)-2)]
@@ -50,14 +50,14 @@ if __name__ == '__main__':
     #     print(data2[i:i+3])
     
     
-    m1, m2 = MinHash(), MinHash()
-    # for d in data1:
-    d = 'AVB'
-    m1.update(d.encode('utf8'))
-    # for d in data2:
-    d = 'BVA'
-    m2.update(d.encode('utf8'))
-    print("Estimated Jaccard for data1 and data2 is", m2.jaccard(m1))
+    # m1, m2 = MinHash(), MinHash()
+    # # for d in data1:
+    # d = 'AVB'
+    # m1.update(d.encode('utf8'))
+    # # for d in data2:
+    # d = 'BVA'
+    # m2.update(d.encode('utf8'))
+    # print("Estimated Jaccard for data1 and data2 is", m2.jaccard(m1))
     
     # sumSimi = 0
     # m2 = MinHash()
@@ -86,7 +86,7 @@ if __name__ == '__main__':
         m3.update(d.encode('utf8'))
     
     # Create an LSH Ensemble index with a threshold
-    lshensemble = MinHashLSHEnsemble(threshold=0.594, num_perm=128)
+    lshensemble = MinHashLSHEnsemble(threshold=0.5, num_perm=128)
     
     # Index takes an iterable of (key, minhash, size)
     lshensemble.index([("m2", m2, len(set2)), ("m3", m3, len(set3))])
@@ -101,14 +101,14 @@ if __name__ == '__main__':
         print(key)
         
     # Create a MinHash LSH Forest with the same num_perm parameter
-    forest = MinHashLSHForest(num_perm=128)
+    # forest = MinHashLSHForest(num_perm=128)
     
-    # Add m2 and m3 into the index
-    forest.add("m2", m2)
-    forest.add("m3", m3)
+    # # Add m2 and m3 into the index
+    # forest.add("m2", m2)
+    # forest.add("m3", m3)
     
-    # IMPORTANT: must call index() otherwise the keys won't be searchable
-    forest.index()
-    # Using m1 as the query, retrieve top 2 keys that have the higest Jaccard
-    result = forest.query(m1, 2)
-    print("Top 2 candidates", result)
+    # # IMPORTANT: must call index() otherwise the keys won't be searchable
+    # forest.index()
+    # # Using m1 as the query, retrieve top 2 keys that have the higest Jaccard
+    # result = forest.query(m1, 2)
+    # print("Top 2 candidates", result)

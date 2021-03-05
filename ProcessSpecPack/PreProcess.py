@@ -44,7 +44,8 @@ if __name__ == '__main__':
 
     peptide_averagine = Averagine({"C": 4.9384, "H": 7.7583, "N": 1.3577, "O": 1.4773, "S": 0.0417})
 
-    plot.draw_peaklist(peptide_averagine.isotopic_cluster(919.76683, charge=3))
+    a = peptide_averagine.isotopic_cluster(919.43770, charge=3)
+    plot.draw_peaklist(a)
 
     
     # humanmlPath = 'G:/Dataset/PXD022999/191122_MK_SIO13_P2-GM1.mzML'

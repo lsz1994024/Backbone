@@ -27,70 +27,80 @@ def getIonCoverage(ions, mzs, massTol, lenTag):
     # return float(numMatch - 2)/(len(mzs) - lenTag - 2)
     return (numMatch - 2)
     
-def getModIons(oriLIons, oriRIons, mzs, massTol, pcMassDiff, modPosL, modPosR):
+def getModIons(originIons, mzs, massTol):
     
-    # print(massTol)
-    # print(mzs)
-    numModL = 0
-    numModR = 0
-    lenMod = modPosR - modPosL
-    maxL = lenMod
-    minR = lenMod
-    print('minR, maxL',minR, maxL)
-    # print(pcMassDiff)
+    numMod = 0
     for mz in mzs:
-        for l in range(len(oriLIons)):
-            # print(abs(eIon - oriLIons[l] - pcMassDiff) , massTol)
-            if abs(mz - oriLIons[l][0] - pcMassDiff) < massTol or abs(mz - oriLIons[l][1] - pcMassDiff) < massTol or abs(mz - oriLIons[l][2] - pcMassDiff) < massTol:
-                # print('mz', mz, oriLIons[l][0])
-                if numModL == 0:
-                    minR = l  #the first lIon corrects the max right mod pos
-                    print('l',l)
-                numModL += 1
+        for l in range(len(originIons)):
+            if abs(mz - originIons[l]) < massTol:
+                numMod += 1
                 
-        for r in range(len(oriRIons)):
-            if abs(mz - oriRIons[r][0] - pcMassDiff) < massTol or abs(mz - oriRIons[r][1] - pcMassDiff) < massTol or abs(mz - oriRIons[r][2] - pcMassDiff) < massTol:
-                # print('mz', mz, oriRIons[r][0])
-                if numModR == 0:
-                    maxL = r  #the first lIon corrects the max right mod pos
-                    print('r',r)
-                numModR += 1
-    print('minR, maxL',minR, maxL)
-    print(modPosL, modPosR)
-    print((modPosL + (lenMod - min(maxL, lenMod))), (modPosR - (lenMod - minR)))
-    return numModL + numModR, (modPosL + (lenMod - min(maxL, lenMod))), (modPosR - (lenMod - minR))
+    return numMod
 
-def getModIonsV2(oriLIons, oriRIons, mzs, massTol, pcMassDiff, modPosL, modPosR):
+def getModIonsV2(modInL, oriLIonsForMod, oriRIonsForMod, oriLIonsForCov, oriRIonsForCov, mzs, massTol, pcMassDiff, modPosL, modPosR):
     numModL = 0
     numModR = 0
-    lenMod = modPosR - modPosL
-    maxL = lenMod
-    minR = lenMod
-    print('minR, maxL',minR, maxL)
+    # lenMod = modPosR - modPosL
+    # maxL = lenMod
+    # minR = lenMod
+    L = modPosL
+    R = modPosR
+    
+    Lb = [L]
+    Rb = [R]
+    Lbsta = 'o'
+    Rbsta = 'o'
+    
+    
+    # print('minR, maxL',minR, maxL)
     # print(pcMassDiff)
     for mz in mzs:
-        for l in range(len(oriLIons)):
+        #mod
+        for l in range(len(oriLIonsForMod)):
             # print(abs(eIon - oriLIons[l] - pcMassDiff) , massTol)
-            if abs(mz - oriLIons[l][0] - pcMassDiff) < massTol or abs(mz - oriLIons[l][1] - pcMassDiff) < massTol or abs(mz - oriLIons[l][2] - pcMassDiff) < massTol:
-                # print('mz', mz, oriLIons[l][0])
-                if numModL == 0:
-                    minR = l  #the first lIon corrects the max right mod pos
-                    print('l',l)
+            if abs(mz - oriLIonsForMod[l][0] - pcMassDiff) < massTol or abs(mz - oriLIonsForMod[l][1] - pcMassDiff) < massTol or abs(mz - oriLIonsForMod[l][2] - pcMassDiff) < massTol:
                 numModL += 1
-                
-        for r in range(len(oriRIons)):
-            if abs(mz - oriRIons[r][0] - pcMassDiff) < massTol or abs(mz - oriRIons[r][1] - pcMassDiff) < massTol or abs(mz - oriRIons[r][2] - pcMassDiff) < massTol:
-                # print('mz', mz, oriRIons[r][0])
-                if numModR == 0:
-                    maxL = r  #the first lIon corrects the max right mod pos
-                    print('r',r)
+                if modPosL + l < R:
+                    R = modPosL + l
+                    Rb.append(R)
+                    Rbsta += 'm'
+            if abs(mz - oriLIonsForMod[l][0]) < massTol or abs(mz - oriLIonsForMod[l][1]) < massTol or abs(mz - oriLIonsForMod[l][2]) < massTol:
+                numModL += 1
+                if modPosL + l + 1 > L:
+                    L = modPosL + l + 1
+                    Lb.append(L)
+                    Lbsta += 'c'
+                    
+        for r in range(len(oriRIonsForMod)):
+            if abs(mz - oriRIonsForMod[r][0] - pcMassDiff) < massTol or abs(mz - oriRIonsForMod[r][1] - pcMassDiff) < massTol or abs(mz - oriRIonsForMod[r][2] - pcMassDiff) < massTol:
                 numModR += 1
-    print('minR, maxL',minR, maxL)
-    print(modPosL, modPosR)
-    print((modPosL + (lenMod - min(maxL, lenMod))), (modPosR - (lenMod - minR)))
-    return numModL + numModR, (modPosL + (lenMod - min(maxL, lenMod))), (modPosR - (lenMod - minR))
+                if modPosR - r > L:
+                    L = modPosR - r
+                    Lb.append(L)
+                    Lbsta += 'm'
+            if abs(mz - oriRIonsForMod[r][0]) < massTol or abs(mz - oriRIonsForMod[r][1]) < massTol or abs(mz - oriRIonsForMod[r][2]) < massTol:
+                numModR += 1
+                if modPosR - r - 1 < R:
+                    R = modPosR - r - 1
+                    Rb.append(R)
+                    Rbsta += 'c'
+                    
+        #cov          
+        for l in range(len(oriLIonsForCov)):
+            # print(abs(eIon - oriLIons[l] - pcMassDiff) , massTol)
+            if abs(mz - oriLIonsForCov[l][0] - (modInL == 1)*pcMassDiff) < massTol or abs(mz - oriLIonsForCov[l][1] - (modInL == 1)*pcMassDiff) < massTol or abs(mz - oriLIonsForCov[l][2] - (modInL == 1)*pcMassDiff) < massTol:
+                numModL += 1
+                    
+        for r in range(len(oriRIonsForCov)):
+            if abs(mz - oriRIonsForCov[r][0] - (modInL == 0)*pcMassDiff) < massTol or abs(mz - oriRIonsForCov[r][1] - (modInL == 0)*pcMassDiff) < massTol or abs(mz - oriRIonsForCov[r][2] - (modInL == 0)*pcMassDiff) < massTol:
+                numModR += 1
+                    
+    # print('minR, maxL',minR, maxL)
+    # print(modPosL, modPosR)
+    # print((modPosL + (lenMod - min(maxL, lenMod))), (modPosR - (lenMod - minR)))
+    return numModL + numModR, Lb, Rb, Lbsta, Rbsta
           
-def findPtm(mzs, reliableTags, feasiblePeps, pcMass, tol):
+def findPtm(mzs, reliableTags, pepCandDict, pcMass, tol):
     massTol = pcMass*tol
     # additionalTags = []
     # for reliableTag in reliableTags:
@@ -103,28 +113,31 @@ def findPtm(mzs, reliableTags, feasiblePeps, pcMass, tol):
     # print(reliableTags)
     for reliableTag in reliableTags:
         tag = reliableTag[0]
-        
-        if tag != 'GVA':
-            continue
+        lOfTag = len(tag)
+        # if tag != 'DAISAETGT':
+        #     continue
         # print(tag)
         # print('it RHF now')
         index = [int(i) for i in reliableTag[2].split()]
         
-        pepCand = getPepCand(tag, feasiblePeps)
+        pepCand = pepCandDict[tag]
         # print(pepCand)
         if len(pepCand) == 0:
             continue
         
         # print(pepCand)
         for pep in pepCand:
-            if pep!= 'SKSYYICTSISTPAIGAGGSGSTGGAVGGK':
-                continue
+            lOfPep = len(pep)
+            # if pep!= 'YHTVNGHNCEVRK':
+            #     continue
             # print(pep)
             # print('GSCFHR')
-            # pcMass = 2755.258270771486
+            # pcMass = 3076.39902
             pcMassDiff = pcMass - calcuSeqMass(pep) 
             
+            
             bPeaks, yPeaks, bH2OPeaks, yH2OPeaks, bNH3Peaks, yNH3Peaks, theoPeaks = getTheoPeaks(pep)
+            
             isPepReversed = False
             
             if pep.find(tag) != -1:
@@ -148,48 +161,76 @@ def findPtm(mzs, reliableTags, feasiblePeps, pcMass, tol):
                 lNH3Peaks = yNH3Peaks.copy()
                 rNH3Peaks = bNH3Peaks.copy()
                 
-            lIonMassTheo = np.array([lPeaks[i] for i in range(alignPos, alignPos + len(tag) + 1)]) #range(i, j) has i, does not have j
+            lIonMassTheo = np.array([lPeaks[i] for i in range(alignPos, alignPos + lOfTag + 1)]) #range(i, j) has i, does not have j
             lIonMassExpe = np.array([mzs[i] for i in index])
             # print(lIonMassTheo)
+            if abs(pcMassDiff) < massTol:
+                otherMzs = list(set(mzs) - set(lIonMassExpe))
+                originIons = lPeaks + lH2OPeaks + lNH3Peaks + rPeaks + rH2OPeaks + rNH3Peaks
+                numMod = getModIons(originIons, otherMzs, massTol)
+                psms.append( tuple((tag, pep, pcMassDiff, '-', '-', '-', '-', numMod)) ) 
+                continue
             # print(lIonMassExpe)
             alignMassDiff = np.average(lIonMassExpe - lIonMassTheo)
-            print(pcMassDiff)
-            print(abs(pcMassDiff - alignMassDiff) < massTol)
+            # print(pcMassDiff)
+            # print(abs(pcMassDiff - alignMassDiff) < massTol)
             modPosL = 1 #initial pos start from 1
-            modPosR = len(pep) #initial pos
+            modPosR = lOfPep #initial pos
+            modInL = 0
+            
             if abs(pcMassDiff - alignMassDiff) < massTol: #very confident, almost do not need further validation
                 #mod pos is in left
                 
                 modPosL = 1
                 modPosR = alignPos
-                print(modPosL, modPosR)
+                modInL = 1  #Lions for cov should be compare to modified
+                # print(modPosL, modPosR)
                 #try to narrow down the mod pos range
-                oriLIons = [i for i in zip(lPeaks[modPosL + len(tag) + 1 : ], lH2OPeaks[modPosL + len(tag) + 1 : ], lNH3Peaks[modPosL + len(tag) + 1 : ] )]
-                oriRIons = [i for i in zip(rPeaks[1 : len(pep) - modPosR], rH2OPeaks[1 : len(pep) - modPosR], rNH3Peaks[1 : len(pep) - modPosR]  )]
+
+                oriLIonsForMod = [i for i in zip(lPeaks[modPosL : modPosR], lH2OPeaks[modPosL : modPosR], lNH3Peaks[modPosL : modPosR] )]
+                oriRIonsForMod = [i for i in zip(rPeaks[lOfPep - modPosR + 1 : ], rH2OPeaks[lOfPep - modPosR + 1 : ], rNH3Peaks[lOfPep - modPosR + 1 : ]  )]
+                #for cov, they are used only to calcu ion cov, only oriMass should be used
+                oriLIonsForCov = [i for i in zip(lPeaks[modPosR + lOfTag + 1 : ], lH2OPeaks[modPosR + lOfTag + 1 : ], lNH3Peaks[modPosR + lOfTag + 1 : ] )]
+                oriRIonsForCov = [i for i in zip(rPeaks[1 : lOfPep - modPosR], rH2OPeaks[1 : lOfPep - modPosR], rNH3Peaks[1 : lOfPep - modPosR]  )]
+
+                #
                 otherMzs = list(set(mzs) - set(lIonMassExpe))
-                getModIonsV2(oriLIons, oriRIons, otherMzs, 0.02, pcMassDiff, modPosL, modPosR)
-                if isPepReversed:
-                    psms.append( tuple((tag, pep[::-1], pcMassDiff, len(pep) + 1 - modPosR, len(pep) + 1 - modPosL)) )
-                else:
-                    psms.append( tuple((tag, pep, pcMassDiff, modPosL, modPosR)) )
+                numMod, modPosLb, modPosRb, Lbs, Rbs = getModIonsV2(modInL, oriLIonsForMod, oriRIonsForMod, oriLIonsForCov, oriRIonsForCov, otherMzs, 0.02, pcMassDiff, modPosL, modPosR)
+                # if numMod <= 5:
+                #     continue
+                if numMod >= lOfPep or min(modPosRb) == max(modPosLb) <= 2:
+                    if isPepReversed:
+                        psms.append( tuple((tag, pep[::-1], pcMassDiff, lOfPep + 1 - modPosRb, lOfPep + 1 - modPosLb, Rbs, Lbs, numMod)) )
+                    else:
+                        psms.append( tuple((tag, pep, pcMassDiff, modPosLb, modPosRb, Lbs, Rbs, numMod)) )
                     
             elif abs(alignMassDiff) < massTol:
                 #mod pos is in right
                 # print('here')
-                modPosL = alignPos + len(tag) + 1
-                modPosR = len(pep)
-                print(modPosL, modPosR)
-                oriLIons = [i for i in zip(lPeaks[modPosL : ], lH2OPeaks[modPosL : ], lNH3Peaks[modPosL : ] )]
-                oriRIons = [i for i in zip(rPeaks[1 : ], rH2OPeaks[1 : ], rNH3Peaks[1 : ]  )]
+                modPosL = alignPos + lOfTag + 1
+                modPosR = lOfPep
+                # print(modPosL, modPosR)
+                
+                oriLIonsForMod = [i for i in zip(lPeaks[modPosL : ], lH2OPeaks[modPosL : ], lNH3Peaks[modPosL : ] )]
+                
+                oriRIonsForMod = [i for i in zip(rPeaks[1 : lOfPep - modPosL + 1], rH2OPeaks[1 : lOfPep - modPosL + 1], rNH3Peaks[1 : lOfPep - modPosL + 1]  )]
+                #for cov, they are used only to calcu ion cov, only oriMass should be used
+                oriLIonsForCov = [i for i in zip(lPeaks[1 : modPosL - lOfTag - 1], lH2OPeaks[1 : modPosL - lOfTag - 1], lNH3Peaks[1 : modPosL - lOfTag - 1] )]
+                if 1 > modPosL - lOfTag - 1:
+                    oriLIonsForCov = []
+                oriRIonsForCov = [i for i in zip(rPeaks[lOfPep - modPosL + 1 + 1 : ], rH2OPeaks[lOfPep - modPosL + 1 + 1 : ], rNH3Peaks[lOfPep - modPosL + 1 + 1 : ]  )]
+
                 otherMzs = list(set(mzs) - set(lIonMassExpe))
-                numMod, modPosL, modPosR = getModIons(oriLIons, oriRIons, otherMzs, 0.02, pcMassDiff, modPosL, modPosR)
+                numMod, modPosLb, modPosRb, Lbs, Rbs = getModIonsV2(modInL, oriLIonsForMod, oriRIonsForMod, oriLIonsForCov, oriRIonsForCov, otherMzs, 0.02, pcMassDiff, modPosL, modPosR)
                 # print('hasMod', hasMod)
-                print(modPosL, modPosR)
-                if numMod >= NUM_EXTRA_MOD_PEAKS:
+                # print(numMod, modPosLb, modPosRb)
+                # if numMod <= 5:
+                #     continue
+                if numMod >= lOfPep or (min(modPosRb) == max(modPosLb)) :
                     if isPepReversed:
-                        psms.append( tuple((tag, pep[::-1], pcMassDiff, len(pep) + 1 - modPosR, len(pep) + 1 - modPosL, numMod)) )
+                        psms.append( tuple((tag, pep[::-1], pcMassDiff, lOfPep + 1 - modPosRb, lOfPep + 1 - modPosLb, Rbs, Lbs, numMod)) )
                     else:
-                        psms.append( tuple((tag, pep, pcMassDiff, modPosL, modPosR, numMod)) )
+                        psms.append( tuple((tag, pep, pcMassDiff, modPosLb, modPosRb, Lbs, Rbs, numMod)) )
                 else:
                     continue
             # else:
@@ -255,8 +296,24 @@ if __name__ == '__main__':
     peps = ['VGVIAASMEAK', 'EKGVAASSAQK', 'IQAVASMVEK', 'CKWVNQIK', 'SEIRNISEK', 'VISGPmEKAK', 'QIGSMVEIAK', 'GIAFAEIQAR', 'EGIAFRPASK', 'TVGIPTAmAAK'] # print(fuzz.partial_ratio(s1,s2))
     # print(fuzz.ratio(s1,s2))
     
-    print(simi(s1,s2))
+    # print(simi(s1,s2))
+    from suffix_trees import STree
+    st = STree.STree(tags)
+    # st.build('KFWPMNASPEI')
+    a = st.find_all('NVI')
     
+    # print(st.word_starts)
+    
+    # for i in tags:
+    #     print(len(i))
+        
+    index = [15, 23, 66, 75]
+    pos = [0, 11, 19, 27, 33, 38, 43, 48, 53, 57, 61, 70, 79, 86, 93, 99, 105, 111, 117, 122] 
+    from Utils.Funcs import binarySearch
+    
+    for i in index:
+        
+        print(i, binarySearch(pos, 0, len(pos), i), tags[binarySearch(pos, 0, len(pos), i)])
     # print(lcs(s1,s2))
     # for tag in tags:
     #     for pep in peps:
