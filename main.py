@@ -24,7 +24,15 @@ import re
 #test
 from ProcessDbPack.ParsePep import calcuSeqMass
 #% functions
-
+def cleanedPtmRes(ptmRes):
+    tags = list(set([p[0] for p in ptmRes]))
+    
+    tagDict = dict.fromkeys(tags, [])
+    
+    for p in ptmRes:
+        tagDict[p[0]].append(p)
+        
+    
 def getFeasiblePepTest(pcMass, allPeps, massShift):
     lb = binarySearch(allPeps['pcMass'], 0, len(allPeps)-1, pcMass - massShift)
     ub = binarySearch(allPeps['pcMass'], 0, len(allPeps)-1, pcMass + 1)
@@ -34,10 +42,11 @@ def getFeasiblePepIndex(tag):
     global bigString, wordStarts, lenWordStarts
     # print(len(bigString))
     forwTagIndexs = [m.start() for m in re.finditer(tag, bigString)]
-    backTagIndexs = [m.start() for m in re.finditer(tag[::-1], bigString)]
     forwPepIndexs = binarySearchList(wordStarts, 0, lenWordStarts, forwTagIndexs)
-    backTagIndexs = binarySearchList(wordStarts, 0, lenWordStarts, backTagIndexs)
-    return list(set(forwPepIndexs+backTagIndexs))
+    
+    backTagIndexs = [m.start() for m in re.finditer(tag[::-1], bigString)]
+    backPepIndexs = binarySearchList(wordStarts, 0, lenWordStarts, backTagIndexs)
+    return list(set(forwPepIndexs + backPepIndexs))
     
 def searchSome(scanNoList):
     global specDict, allPeps
@@ -71,20 +80,33 @@ def searchSome(scanNoList):
         if len(reliableTags) == 0:
             continue
         
+        # print(reliableTags+reliableTags)
+        # reliableTags = cleanUpTags(reliableTags+reliableTags)
         # print(reliableTags)
-        # cleanUpTags(reliableTags)
-        
         pepCandDict = dict.fromkeys([tag[0] for tag in reliableTags], [])
+        
+        
+        #% this part is quite time consuming
         for tag in pepCandDict:
             pepIndexs = getFeasiblePepIndex(tag)
-            pepCandDict[tag] = [allPeps[i] for i in pepIndexs]
             
+            pepList = []
+            for i in pepIndexs:
+                if abs(pcMass - calcuSeqMass(allPeps[i])) < pcMass*MS1_TOL:
+                    pepList = [allPeps[i]]
+                    break
+                pepList.append(allPeps[i])
+            pepCandDict[tag] = pepList
+        # print('GVAV',pepCandDict['GVAV'])        
         # pepIndexs = getFeasiblePepIndex(tag)
         # print(len(feasiblePeps))
         
         # print(reliableTags)
-        ptm = findPtm(mzs, reliableTags, pepCandDict, pcMass, MS1_TOL)
-        for p in ptm:
+        ptmRes = findPtm(mzs, reliableTags, pepCandDict, pcMass, MS1_TOL)
+        
+        # cleanedPtmRes = cleanPtms(ptmRes)
+        
+        for p in ptmRes:
             psms.append([scanNo, p])  
     return psms
     
@@ -97,8 +119,8 @@ def doSearch(specDict, allPeps):
     
     scanNoList = [key for key in specDict]
     
-    # scanNoList = [47780, 1844, 2608]#1844,2462,2608,13540,18113,37531,40813,40972,44676,46721,47401,47547,47607] #test
-    #1844,2462,2608, C   47401 no   other M
+    # scanNoList = [20554]#1844,2462,2608,13540,18113,37531,40813,40972,44676,46721,47401,47547,47607] #test
+    # 1844,2462,2608, C   47401 no   other M
     dividedScanList = divideInputList(scanNoList, 2000)
     
     print('len of scanNo list ', len(scanNoList))
@@ -170,13 +192,13 @@ if __name__ == '__main__':
     allPsms = doSearch(specDict, allPeps)
     t5 = time()
     
+    # print(allPsms)
     print("finish searching ", t5-t4)
     from Utils.Funcs import sendEmail
-    sendEmail()
     
-    #% write
+    #%% write
     # psms.append( tuple((tag, pep, pcMassDiff, modPosLb, modPosRb, Lbs, Rbs, numMod)) )
-    dataPsms = pd.DataFrame({'scanNo'   : [psm[0] for psm in allPsms],
+    dataPsms = pd.DataFrame({'scanNo'   : [psm[0]    for psm in allPsms],
                              'tags'     : [psm[1][0] for psm in allPsms],
                              'pep'      : [psm[1][1] for psm in allPsms],
                              'massdiff' : [psm[1][2] for psm in allPsms], 
@@ -184,10 +206,14 @@ if __name__ == '__main__':
                              'modPosRb' : [psm[1][4] for psm in allPsms],
                              'lbs'      : [psm[1][5] for psm in allPsms],
                              'rbs'      : [psm[1][6] for psm in allPsms],
-                             'numMod'   : [psm[1][7] for psm in allPsms]})
-    filePath = pd.ExcelWriter(r'TempData/ptmRevise.xlsx')
-    dataPsms.to_excel(r'TempData/ptmRevise.xlsx')
+                             'numMod'   : [psm[1][7] for psm in allPsms],
+                             'matchedL' : [psm[1][8] for psm in allPsms],
+                             'matchedR' : [psm[1][9] for psm in allPsms]
+                             })
+    filePath = pd.ExcelWriter(r'TempData/ptmRevise0309.xlsx')
+    dataPsms.to_excel(r'TempData/ptmRevise0309.xlsx')
 
+    # sendEmail()
     #%% verification
     # dataMascot = pd.read_excel('/home/slaiad/Code/TagTree/testData/MK_SIO13_P2_GM1.xlsx')
     

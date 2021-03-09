@@ -5,7 +5,7 @@ Created on Tue Feb  9 09:51:05 2021
 @author: slaiad
 """
 import numpy as np
-from math import floor
+from math import floor, sqrt, pi, exp
 
 def divideInputList(inputList, size):
     dividedList = []
@@ -55,7 +55,7 @@ def binarySearchList(arr, l,r, sortX):
 def sendEmail():
     import yagmail
     yag = yagmail.SMTP(user = '2578027596@qq.com', password = 'alexlptryglrdhii', host = 'smtp.qq.com')
-    yag.send(to = ['laishengzhi1994@163.com'], subject = 'Finished code', contents = ['Finished code', 'TempData/ptmRevise.xlsx'])
+    yag.send(to = ['laishengzhi1994@163.com'], subject = 'Finished code', contents = ['Finished code'])#, 'TempData/ptmRevise.xlsx'])
 
 MU = 0
 def gaussian(x, SIGMA2):

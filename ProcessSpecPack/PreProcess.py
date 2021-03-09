@@ -19,7 +19,14 @@ def preProcMzs(mzs):
     #for neutral mass
     newMzs = np.insert(mzs, 0, ATOM_MASS['O']*1 + ATOM_MASS['H']*2 ) #worked for y1
     newMzs = np.insert(newMzs, 0, 0) #worked for b1
-    return newMzs
+    
+    deltaMzs = newMzs - np.concatenate(([-2], newMzs[0:-1]))
+    outmz = [newMzs[i] for i in range(len(deltaMzs)) if abs(deltaMzs[i]) > 0.0005]
+    # return newMzs
+    
+    # print(newMzs)
+    # print(outmz)
+    return np.array(outmz)
 
 def deIsotope(peaks):
     dcPeaks, _ = ms_deisotope.deconvolute_peaks(peaks,
@@ -44,7 +51,7 @@ if __name__ == '__main__':
 
     peptide_averagine = Averagine({"C": 4.9384, "H": 7.7583, "N": 1.3577, "O": 1.4773, "S": 0.0417})
 
-    a = peptide_averagine.isotopic_cluster(919.43770, charge=3)
+    a = peptide_averagine.isotopic_cluster(846.7, charge=3)
     plot.draw_peaklist(a)
 
     
